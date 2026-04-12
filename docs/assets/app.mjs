@@ -31,6 +31,8 @@ const state = {
   results: [],
   analysis: null,
   markdownReport: "",
+  summarySortMode: "score",
+  detailSortMode: "score",
 };
 
 const elements = {
@@ -47,6 +49,10 @@ const elements = {
   resultsTableWrap: document.querySelector("#resultsTableWrap"),
   itemStatsTableWrap: document.querySelector("#itemStatsTableWrap"),
   resultCountChip: document.querySelector("#resultCountChip"),
+  summarySortByName: document.querySelector("#summarySortByName"),
+  summarySortByScore: document.querySelector("#summarySortByScore"),
+  detailSortByName: document.querySelector("#detailSortByName"),
+  detailSortByScore: document.querySelector("#detailSortByScore"),
   downloadResults: document.querySelector("#downloadResults"),
   downloadReport: document.querySelector("#downloadReport"),
 };
@@ -281,8 +287,23 @@ function renderSummary() {
     .join("");
 }
 
-function getSortedResults() {
+function syncSortButtons() {
+  elements.summarySortByName.classList.toggle("is-active", state.summarySortMode === "name");
+  elements.summarySortByScore.classList.toggle("is-active", state.summarySortMode === "score");
+  elements.detailSortByName.classList.toggle("is-active", state.detailSortMode === "name");
+  elements.detailSortByScore.classList.toggle("is-active", state.detailSortMode === "score");
+}
+
+function getSortedResults(sortMode = "score") {
   return [...state.results].sort((left, right) => {
+    if (sortMode === "name") {
+      const nameDelta = collator.compare(String(left.이름 ?? ""), String(right.이름 ?? ""));
+      if (nameDelta !== 0) {
+        return nameDelta;
+      }
+      return (Number(right.total_score) || 0) - (Number(left.total_score) || 0);
+    }
+
     const scoreDelta = (Number(right.total_score) || 0) - (Number(left.total_score) || 0);
     if (scoreDelta !== 0) {
       return scoreDelta;
@@ -298,7 +319,7 @@ function renderSummaryResultsTable() {
     return;
   }
 
-  const rows = getSortedResults();
+  const rows = getSortedResults(state.summarySortMode);
   elements.summaryResultsTableWrap.innerHTML = `
     <table class="result-table">
       <thead>
@@ -334,7 +355,7 @@ function renderResultsTable() {
     return;
   }
 
-  const rows = getSortedResults();
+  const rows = getSortedResults(state.detailSortMode);
   elements.resultCountChip.textContent = `${rows.length}건`;
   elements.resultsTableWrap.innerHTML = `
     <table class="result-table">
@@ -444,6 +465,7 @@ function renderItemStatsTable() {
 }
 
 function renderAll() {
+  syncSortButtons();
   renderSummary();
   renderSummaryResultsTable();
   renderResultsTable();
@@ -806,6 +828,26 @@ elements.zipPassword.addEventListener("keydown", (event) => {
   if (event.key === "Enter" && !elements.gradeButton.disabled) {
     handleGrade();
   }
+});
+
+elements.summarySortByName.addEventListener("click", () => {
+  state.summarySortMode = "name";
+  renderAll();
+});
+
+elements.summarySortByScore.addEventListener("click", () => {
+  state.summarySortMode = "score";
+  renderAll();
+});
+
+elements.detailSortByName.addEventListener("click", () => {
+  state.detailSortMode = "name";
+  renderAll();
+});
+
+elements.detailSortByScore.addEventListener("click", () => {
+  state.detailSortMode = "score";
+  renderAll();
 });
 
 elements.gradeButton.addEventListener("click", handleGrade);

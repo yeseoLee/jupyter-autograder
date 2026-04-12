@@ -147,6 +147,14 @@
               <div class="section-kicker">4. 요약 결과</div>
               <h2>채점 요약 결과 테이블</h2>
             </div>
+            <div class="sort-controls" aria-label="채점 요약 결과 정렬">
+              <button class="sort-button" id="summarySortByName" type="button">
+                이름순 정렬
+              </button>
+              <button class="sort-button is-active" id="summarySortByScore" type="button">
+                점수 순 정렬
+              </button>
+            </div>
           </div>
           <div class="table-wrap" id="summaryResultsTableWrap">
             <div class="empty-table">채점 결과가 아직 없습니다.</div>
@@ -159,7 +167,17 @@
               <div class="section-kicker">5. 학생별 결과</div>
               <h2>채점 결과 테이블</h2>
             </div>
-            <div class="hint-chip" id="resultCountChip">0건</div>
+            <div class="section-tools">
+              <div class="sort-controls" aria-label="채점 결과 정렬">
+                <button class="sort-button" id="detailSortByName" type="button">
+                  이름순 정렬
+                </button>
+                <button class="sort-button is-active" id="detailSortByScore" type="button">
+                  점수 순 정렬
+                </button>
+              </div>
+              <div class="hint-chip" id="resultCountChip">0건</div>
+            </div>
           </div>
           <div class="table-wrap" id="resultsTableWrap">
             <div class="empty-table">채점 결과가 아직 없습니다.</div>
