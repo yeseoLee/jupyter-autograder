@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>실습 코드 채점 도구</title>
+    <meta
+      name="description"
+      content="ZIP 제출 묶음을 브라우저에서 바로 채점하는 실습 코드 채점 도구"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./assets/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero panel">
+        <div class="eyebrow">Browser Grading Tool</div>
+        <div class="hero-grid">
+          <div>
+            <h1>실습 코드 채점 도구</h1>
+          </div>
+          <div class="hero-card hero-note">
+            <p>
+              기존 채점 규칙을 반영해 제출 묶음 ZIP 하나를 브라우저에서 바로
+              채점합니다.
+            </p>
+            <p>
+              학생 폴더와 내부 ZIP을 자동으로 탐색하고, 암호화된 ZIP은 공통
+              비밀번호 입력 후 바로 채점할 수 있습니다.
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="panel upload-panel">
+          <div class="section-head">
+            <div>
+              <div class="section-kicker">1. 업로드</div>
+              <h2>전체 제출 ZIP 채점</h2>
+            </div>
+            <div class="hint-chip">브라우저 내 처리, 서버 업로드 없음</div>
+          </div>
+
+          <label class="dropzone" id="dropzone" for="zipInput">
+            <input id="zipInput" type="file" accept=".zip" hidden />
+            <span class="dropzone-title">ZIP 파일을 끌어 놓거나 클릭해서 선택</span>
+            <span class="dropzone-copy">
+              ZIP 해제와 채점을 모두 브라우저에서 수행합니다. 암호화된 ZIP은
+              아래 비밀번호 입력란을 사용합니다.
+            </span>
+            <span class="dropzone-filename" id="selectedFileName">
+              아직 선택된 파일이 없습니다.
+            </span>
+          </label>
+
+          <div class="password-row">
+            <label class="input-field" for="zipPassword">
+              <span class="input-label">ZIP 비밀번호</span>
+              <input
+                id="zipPassword"
+                type="password"
+                placeholder="암호화된 ZIP이면 입력"
+                autocomplete="current-password"
+                spellcheck="false"
+              />
+            </label>
+            <p class="input-caption">
+              최상위 업로드 ZIP과 학생별 내부 ZIP에 공통 비밀번호가 걸려 있으면 같은
+              값으로 복호화합니다. 비밀번호가 없으면 비워 두면 됩니다.
+            </p>
+          </div>
+
+          <div class="upload-actions">
+            <button class="primary-button" id="gradeButton" disabled>
+              채점 시작
+            </button>
+            <button class="ghost-button" id="resetButton" disabled>
+              결과 초기화
+            </button>
+          </div>
+
+          <div class="status-banner" id="statusBanner">
+            ZIP 파일을 선택하면 여기에서 진행 상태를 표시합니다.
+          </div>
+
+          <div class="expectation-grid">
+            <article>
+              <h3>권장 입력 구조</h3>
+              <pre><code>전체제출.zip
+└─ 제출파일/
+   ├─ 홍길동_기본 1반/
+   │  └─ 홍길동_기본 1반 2차수.zip
+   └─ 김학생_기본 1반/
+      └─ 김학생_기본 1반 2차수.zip</code></pre>
+            </article>
+            <article>
+              <h3>자동 보정</h3>
+              <ul class="compact-list">
+                <li>최상위 래퍼 폴더와 <code>제출파일/</code>는 자동 제거</li>
+                <li>학생 폴더 안에 ZIP이 없으면 직접 포함된 <code>.ipynb</code>도 사용</li>
+                <li>노트북이 여러 개면 가장 큰 파일을 우선 선택</li>
+              </ul>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <div>
+              <div class="section-kicker">2. 요약</div>
+              <h2>채점 통계</h2>
+            </div>
+          </div>
+          <div class="summary-grid" id="summaryCards">
+            <div class="placeholder-card">채점 후 요약 카드가 표시됩니다.</div>
+          </div>
+          <div class="distribution-list" id="distributionList"></div>
+        </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <div>
+              <div class="section-kicker">3. 다운로드</div>
+              <h2>산출물 내보내기</h2>
+            </div>
+          </div>
+          <div class="export-grid">
+            <button class="secondary-button" id="downloadResults" disabled>
+              grading_results.csv
+            </button>
+            <button class="secondary-button" id="downloadReport" disabled>
+              grading_report.md
+            </button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <div>
+              <div class="section-kicker">4. 요약 결과</div>
+              <h2>채점 요약 결과 테이블</h2>
+            </div>
+          </div>
+          <div class="table-wrap" id="summaryResultsTableWrap">
+            <div class="empty-table">채점 결과가 아직 없습니다.</div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <div>
+              <div class="section-kicker">5. 학생별 결과</div>
+              <h2>채점 결과 테이블</h2>
+            </div>
+            <div class="hint-chip" id="resultCountChip">0건</div>
+          </div>
+          <div class="table-wrap" id="resultsTableWrap">
+            <div class="empty-table">채점 결과가 아직 없습니다.</div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <div>
+              <div class="section-kicker">6. 감점 빈도</div>
+              <h2>채점 기준별 통계</h2>
+            </div>
+          </div>
+          <div class="table-wrap" id="itemStatsTableWrap">
+            <div class="empty-table">감점 통계가 아직 없습니다.</div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="./assets/app.mjs"></script>
+  </body>
+</html>
