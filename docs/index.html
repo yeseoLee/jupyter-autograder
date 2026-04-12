@@ -147,13 +147,12 @@
               <div class="section-kicker">4. 요약 결과</div>
               <h2>채점 요약 결과 테이블</h2>
             </div>
-            <div class="sort-controls" aria-label="채점 요약 결과 정렬">
-              <button class="sort-button" id="summarySortByName" type="button">
-                이름순 정렬
-              </button>
-              <button class="sort-button is-active" id="summarySortByScore" type="button">
-                점수 순 정렬
-              </button>
+            <div class="sort-controls">
+              <label class="sort-label" for="summarySortMode">정렬</label>
+              <select class="sort-select" id="summarySortMode" aria-label="채점 요약 결과 정렬">
+                <option value="score">점수 순 정렬</option>
+                <option value="name">이름순 정렬</option>
+              </select>
             </div>
           </div>
           <div class="table-wrap" id="summaryResultsTableWrap">
@@ -168,13 +167,12 @@
               <h2>채점 결과 테이블</h2>
             </div>
             <div class="section-tools">
-              <div class="sort-controls" aria-label="채점 결과 정렬">
-                <button class="sort-button" id="detailSortByName" type="button">
-                  이름순 정렬
-                </button>
-                <button class="sort-button is-active" id="detailSortByScore" type="button">
-                  점수 순 정렬
-                </button>
+              <div class="sort-controls">
+                <label class="sort-label" for="detailSortMode">정렬</label>
+                <select class="sort-select" id="detailSortMode" aria-label="채점 결과 정렬">
+                  <option value="score">점수 순 정렬</option>
+                  <option value="name">이름순 정렬</option>
+                </select>
               </div>
               <div class="hint-chip" id="resultCountChip">0건</div>
             </div>

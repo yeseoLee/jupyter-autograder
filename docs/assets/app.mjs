@@ -49,10 +49,8 @@ const elements = {
   resultsTableWrap: document.querySelector("#resultsTableWrap"),
   itemStatsTableWrap: document.querySelector("#itemStatsTableWrap"),
   resultCountChip: document.querySelector("#resultCountChip"),
-  summarySortByName: document.querySelector("#summarySortByName"),
-  summarySortByScore: document.querySelector("#summarySortByScore"),
-  detailSortByName: document.querySelector("#detailSortByName"),
-  detailSortByScore: document.querySelector("#detailSortByScore"),
+  summarySortMode: document.querySelector("#summarySortMode"),
+  detailSortMode: document.querySelector("#detailSortMode"),
   downloadResults: document.querySelector("#downloadResults"),
   downloadReport: document.querySelector("#downloadReport"),
 };
@@ -287,11 +285,9 @@ function renderSummary() {
     .join("");
 }
 
-function syncSortButtons() {
-  elements.summarySortByName.classList.toggle("is-active", state.summarySortMode === "name");
-  elements.summarySortByScore.classList.toggle("is-active", state.summarySortMode === "score");
-  elements.detailSortByName.classList.toggle("is-active", state.detailSortMode === "name");
-  elements.detailSortByScore.classList.toggle("is-active", state.detailSortMode === "score");
+function syncSortControls() {
+  elements.summarySortMode.value = state.summarySortMode;
+  elements.detailSortMode.value = state.detailSortMode;
 }
 
 function getSortedResults(sortMode = "score") {
@@ -465,7 +461,7 @@ function renderItemStatsTable() {
 }
 
 function renderAll() {
-  syncSortButtons();
+  syncSortControls();
   renderSummary();
   renderSummaryResultsTable();
   renderResultsTable();
@@ -830,23 +826,13 @@ elements.zipPassword.addEventListener("keydown", (event) => {
   }
 });
 
-elements.summarySortByName.addEventListener("click", () => {
-  state.summarySortMode = "name";
+elements.summarySortMode.addEventListener("change", (event) => {
+  state.summarySortMode = event.target.value;
   renderAll();
 });
 
-elements.summarySortByScore.addEventListener("click", () => {
-  state.summarySortMode = "score";
-  renderAll();
-});
-
-elements.detailSortByName.addEventListener("click", () => {
-  state.detailSortMode = "name";
-  renderAll();
-});
-
-elements.detailSortByScore.addEventListener("click", () => {
-  state.detailSortMode = "score";
+elements.detailSortMode.addEventListener("change", (event) => {
+  state.detailSortMode = event.target.value;
   renderAll();
 });
 
