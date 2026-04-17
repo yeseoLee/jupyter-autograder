@@ -662,11 +662,5 @@ export function buildMarkdownReport(results, analysis, meta = {}) {
     }
   }
 
-  reportLines.push("## 6. 해석 가이드");
-  reportLines.push("");
-  reportLines.push("- `감점항목`은 기준표 기준으로 충족되지 않은 항목을 나열합니다.");
-  reportLines.push("- 업로드 구조가 예외적인 경우 `warning` 또는 `오류` 컬럼을 함께 확인하세요.");
-  reportLines.push("- 웹 버전은 `.zip` 업로드만 지원합니다.");
-
   return `${reportLines.join("\n")}\n`;
 }
