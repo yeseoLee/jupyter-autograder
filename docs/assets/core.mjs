@@ -93,8 +93,6 @@ export const FIXED_COLUMNS = [
   "step15_tools_called",
 ];
 
-export const EXTRA_COLUMNS = ["selected_notebook", "warning", "오류"];
-
 export const BUCKET_ORDER = [
   "100점",
   "90점대",
@@ -594,7 +592,7 @@ export function toCsv(rows, columns) {
 }
 
 export function buildResultsCsv(results) {
-  return toCsv(results, [...FIXED_COLUMNS, ...EXTRA_COLUMNS]);
+  return toCsv(results, FIXED_COLUMNS);
 }
 
 export function buildMarkdownReport(results, analysis, meta = {}) {
