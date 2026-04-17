@@ -15,6 +15,7 @@ import {
   deriveStudentName,
   formatNumber,
   getFailedItemLabels,
+  normalizeUnicodeNFC,
 } from "./core.mjs";
 
 const collator = new Intl.Collator("ko", { numeric: true, sensitivity: "base" });
@@ -56,7 +57,7 @@ const elements = {
 };
 
 function escapeHtml(value) {
-  return String(value ?? "")
+  return normalizeUnicodeNFC(String(value ?? ""))
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -65,7 +66,7 @@ function escapeHtml(value) {
 }
 
 function normalizePath(path) {
-  return String(path ?? "")
+  return normalizeUnicodeNFC(String(path ?? ""))
     .replace(/\\/g, "/")
     .replace(/^\/+/, "")
     .replace(/\/+/g, "/");
@@ -78,11 +79,11 @@ function basename(path) {
 }
 
 function stripExtension(filename) {
-  return String(filename ?? "").replace(/\.[^.]+$/, "");
+  return normalizeUnicodeNFC(String(filename ?? "")).replace(/\.[^.]+$/, "");
 }
 
 function hasExtension(filename, extension) {
-  return String(filename ?? "").toLowerCase().endsWith(extension);
+  return normalizeUnicodeNFC(String(filename ?? "")).toLowerCase().endsWith(extension);
 }
 
 function isZipFile(filename) {
@@ -126,8 +127,9 @@ function getStatusType(message) {
 }
 
 function setStatus(message) {
-  elements.statusBanner.textContent = message;
-  elements.statusBanner.dataset.state = getStatusType(message);
+  const normalizedMessage = normalizeUnicodeNFC(message);
+  elements.statusBanner.textContent = normalizedMessage;
+  elements.statusBanner.dataset.state = getStatusType(normalizedMessage);
 }
 
 function setBusy(isBusy) {
@@ -148,7 +150,7 @@ function downloadText(filename, content, mimeType) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = filename;
+  link.download = normalizeUnicodeNFC(filename);
   document.body.append(link);
   link.click();
   link.remove();
@@ -168,9 +170,9 @@ function getErrorFingerprint(error) {
 
 function getErrorMessage(error) {
   if (error instanceof Error && error.message) {
-    return error.message;
+    return normalizeUnicodeNFC(error.message);
   }
-  return String(error ?? "알 수 없는 오류");
+  return normalizeUnicodeNFC(String(error ?? "알 수 없는 오류"));
 }
 
 function matchesArchiveError(error, constant, pattern) {
@@ -192,7 +194,9 @@ function describeArchiveError(error) {
 }
 
 function formatArchiveError(error, fallbackPrefix = "압축 해제 실패") {
-  return describeArchiveError(error) ?? `${fallbackPrefix}: ${getErrorMessage(error)}`;
+  return normalizeUnicodeNFC(
+    describeArchiveError(error) ?? `${fallbackPrefix}: ${getErrorMessage(error)}`,
+  );
 }
 
 function buildReadOptions(password) {
@@ -776,7 +780,7 @@ function handleFileSelection(file) {
 
   state.file = file;
   elements.selectedFileName.textContent = file
-    ? `${file.name} (${numberFormatter.format(file.size / 1024)} KB)`
+    ? `${normalizeUnicodeNFC(file.name)} (${numberFormatter.format(file.size / 1024)} KB)`
     : "아직 선택된 파일이 없습니다.";
   state.results = [];
   state.analysis = null;

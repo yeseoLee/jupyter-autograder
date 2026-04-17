@@ -114,18 +114,25 @@ function isFiniteNumber(value) {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+export function normalizeUnicodeNFC(value) {
+  if (typeof value === "string") {
+    return value.normalize("NFC");
+  }
+  return value;
+}
+
 function escapeRegex(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function normalizeTextValue(value) {
   if (Array.isArray(value)) {
-    return value.join("");
+    return normalizeUnicodeNFC(value.join(""));
   }
   if (value == null) {
     return "";
   }
-  return String(value);
+  return normalizeUnicodeNFC(String(value));
 }
 
 function roundNumber(value, digits = 2) {
@@ -185,7 +192,7 @@ function outputToText(output) {
 }
 
 function markdownEscape(value) {
-  return String(value ?? "")
+  return normalizeUnicodeNFC(String(value ?? ""))
     .replace(/\|/g, "\\|")
     .replace(/\r?\n/g, "<br>");
 }
@@ -260,7 +267,7 @@ export function formatNumber(value) {
 }
 
 export function deriveStudentName(rawName) {
-  return String(rawName ?? "")
+  return normalizeUnicodeNFC(String(rawName ?? ""))
     .replace(/\.[^.]+$/, "")
     .split("_")[0]
     .trim();
@@ -268,8 +275,8 @@ export function deriveStudentName(rawName) {
 
 export function createBlankResult(studentName, fileName, errorMessage = "") {
   const row = {
-    이름: studentName,
-    파일명: fileName,
+    이름: normalizeUnicodeNFC(studentName),
+    파일명: normalizeUnicodeNFC(fileName),
     total_score: 0,
     code_score: 0,
     output_score: 0,
@@ -277,7 +284,7 @@ export function createBlankResult(studentName, fileName, errorMessage = "") {
     step15_tools_called: "(없음)",
     selected_notebook: "",
     warning: "",
-    오류: errorMessage,
+    오류: normalizeUnicodeNFC(errorMessage),
   };
 
   for (const spec of ITEM_SPECS) {
@@ -447,10 +454,10 @@ export function buildGradingRow({
   warning = "",
 }) {
   const row = {
-    이름: studentName,
-    파일명: fileName,
-    selected_notebook: selectedNotebook,
-    warning,
+    이름: normalizeUnicodeNFC(studentName),
+    파일명: normalizeUnicodeNFC(fileName),
+    selected_notebook: normalizeUnicodeNFC(selectedNotebook),
+    warning: normalizeUnicodeNFC(warning),
     오류: "",
   };
   return { ...row, ...gradeNotebook(notebook) };
@@ -579,7 +586,7 @@ export function analyzeResults(results) {
 
 export function toCsv(rows, columns) {
   const escapeCell = (value) => {
-    const text = String(value ?? "");
+    const text = normalizeUnicodeNFC(String(value ?? ""));
     if (/[",\r\n]/.test(text)) {
       return `"${text.replace(/"/g, '""')}"`;
     }
@@ -597,7 +604,7 @@ export function buildResultsCsv(results) {
 
 export function buildMarkdownReport(results, analysis, meta = {}) {
   const generatedAt = meta.generatedAt ?? new Date();
-  const inputName = meta.inputName ?? "uploaded.zip";
+  const inputName = normalizeUnicodeNFC(meta.inputName ?? "uploaded.zip");
   const { summary, bucketCounts, itemStats, topDeductionItems, bucketSections } = analysis;
 
   const summaryRows = [
