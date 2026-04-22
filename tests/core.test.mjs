@@ -15,6 +15,7 @@ import {
 } from "../docs/assets/core.mjs";
 
 function buildNotebookFixture({
+  generalChatFunctionName = "general_chat",
   temperature = "0",
   maxTokens = "900",
   chunkSize = "1200",
@@ -69,7 +70,7 @@ ${developerInvokeLine}
 def check_progress():
     return "ok"
 
-def general_chat():
+def ${generalChatFunctionName}():
 ${generalInvokeLine}
 
 supervisor_tools = [
@@ -77,7 +78,7 @@ supervisor_tools = [
     ask_planner,
     ask_developer,
     check_progress,
-    general_chat,
+    ${generalChatFunctionName},
 ]
 supervisor = create_agent(...)
   `;
@@ -212,13 +213,13 @@ test("old rubric values fail under the new april 2026 checks", () => {
     }),
   );
 
-  assert.equal(result.temperature, "X");
+  assert.equal(result.temperature, "O");
   assert.equal(result.max_tokens, "X");
   assert.equal(result.chunk_size, "X");
   assert.equal(result.chunk_overlap, "X");
   assert.equal(result.retriever_k, "X");
-  assert.equal(result.code_score, 30);
-  assert.equal(result.total_score, 80);
+  assert.equal(result.code_score, 32.5);
+  assert.equal(result.total_score, 82.5);
 });
 
 test("missing planning spec_search marks spec_search_tool as failed", () => {
@@ -233,6 +234,18 @@ test("missing ask_developer dev_executor.invoke marks dev_invoke as failed", () 
 
   assert.equal(result.dev_invoke, "X");
   assert.equal(result.code_score, 45);
+});
+
+test("python-compatible prefix match counts general_chat_tool for general_executor check", () => {
+  const result = gradeNotebook(
+    buildNotebookFixture({
+      generalChatFunctionName: "general_chat_tool",
+      step15Tools: ["general_chat_tool"],
+    }),
+  );
+
+  assert.equal(result.general_executor, "O");
+  assert.equal(result.out_general_branch, "X");
 });
 
 test("irrelevant output keywords apply -30 deduction and clamp total score at zero", () => {

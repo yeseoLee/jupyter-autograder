@@ -161,21 +161,11 @@ function toCheckMark(passed) {
   return passed ? "O" : "X";
 }
 
-function extractFunctionSlice(code, functionName, boundaryMarkers) {
-  const start = code.search(new RegExp(`def\\s+${escapeRegex(functionName)}\\b`));
-  if (start === -1) {
-    return "";
-  }
-
-  const slice = code.slice(start);
-  let end = slice.length;
-  for (const marker of boundaryMarkers) {
-    const index = slice.indexOf(marker);
-    if (index !== -1 && index < end) {
-      end = index;
-    }
-  }
-  return slice.slice(0, end);
+function extractFunctionSliceByRegex(code, functionName, boundaryRegex) {
+  const match = code.match(
+    new RegExp(`def\\s+${escapeRegex(functionName)}.*?(?=${boundaryRegex}|\\Z)`, "s"),
+  );
+  return match?.[0] ?? "";
 }
 
 function extractSupervisorToolsBlock(code) {
@@ -400,21 +390,21 @@ export function gradeNotebook(notebook) {
     .map((cell) => normalizeTextValue(cell?.source))
     .join("\n");
 
-  const checkTemperature = /temperature\s*=\s*0\b(?!\.)/.test(code);
-  const checkMaxTokens = /max_tokens\s*=\s*900\b(?!\.)/.test(code);
-  const checkChunkSize = /chunk_size\s*=\s*1200\b(?!\.)/.test(code);
-  const checkChunkOverlap = /chunk_overlap\s*=\s*200\b(?!\.)/.test(code);
+  const checkTemperature = /temperature\s*=\s*0/.test(code);
+  const checkMaxTokens = /max_tokens\s*=\s*900/.test(code);
+  const checkChunkSize = /chunk_size\s*=\s*1200/.test(code);
+  const checkChunkOverlap = /chunk_overlap\s*=\s*200/.test(code);
   const checkEmbeddingModel = code.includes("text-embedding-3-small");
   const checkEmbeddingFunction = /embedding_function\s*=\s*emb/.test(code);
-  const checkRetrieverK = /["']k["']\s*:\s*3\b(?!\.)/.test(code);
+  const checkRetrieverK = /["']k["']\s*:\s*3/.test(code);
 
   const planningExecutorBlock = extractPlanningExecutorBlock(code);
   const checkSpecSearchTool = /tools\s*=\s*\[.*spec_search.*\]/s.test(planningExecutorBlock);
 
-  const developerFnCode = extractFunctionSlice(code, "ask_developer", ["\n@tool", "\ndef check_progress"]);
+  const developerFnCode = extractFunctionSliceByRegex(code, "ask_developer", "\\n@tool|\\ndef check_progress");
   const checkDevInvoke = /dev_executor\.invoke\s*\(/.test(developerFnCode);
 
-  const generalFnCode = extractFunctionSlice(code, "general_chat", ["\n@tool", "\nsupervisor_tools"]);
+  const generalFnCode = extractFunctionSliceByRegex(code, "general_chat", "\\n@tool|\\nsupervisor_tools");
   const checkGeneralExecutor = /general_executor\.invoke\s*\(/.test(generalFnCode);
 
   const supervisorToolsBlock = extractSupervisorToolsBlock(code);
