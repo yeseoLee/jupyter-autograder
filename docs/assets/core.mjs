@@ -1,8 +1,8 @@
 export const ITEM_SPECS = [
-  { col: "temperature", label: "temperature = 0.1", points: 2.5, group: "코드" },
-  { col: "max_tokens", label: "max_tokens = 800", points: 2.5, group: "코드" },
-  { col: "chunk_size", label: "chunk_size = 1000", points: 5, group: "코드" },
-  { col: "chunk_overlap", label: "chunk_overlap = 150", points: 5, group: "코드" },
+  { col: "temperature", label: "temperature = 0", points: 2.5, group: "코드" },
+  { col: "max_tokens", label: "max_tokens = 900", points: 2.5, group: "코드" },
+  { col: "chunk_size", label: "chunk_size = 1200", points: 5, group: "코드" },
+  { col: "chunk_overlap", label: "chunk_overlap = 200", points: 5, group: "코드" },
   {
     col: "embedding_model",
     label: 'embedding_model = "text-embedding-3-small"',
@@ -10,16 +10,16 @@ export const ITEM_SPECS = [
     group: "코드",
   },
   { col: "embedding_function", label: "embedding_function = emb", points: 5, group: "코드" },
-  { col: "retriever_k", label: "retriever k = 4", points: 5, group: "코드" },
+  { col: "retriever_k", label: "retriever k = 3", points: 5, group: "코드" },
   {
-    col: "qwen_invoke_1st",
-    label: "ask_vision_analyst 내 qwen3vl_answer.invoke (첫 번째)",
+    col: "spec_search_tool",
+    label: "planning_executor에 spec_search tool 연결",
     points: 5,
     group: "코드",
   },
   {
-    col: "qwen_invoke_fallback",
-    label: "ask_vision_analyst 내 qwen3vl_answer.invoke (fallback)",
+    col: "dev_invoke",
+    label: "ask_developer 내 dev_executor.invoke",
     points: 5,
     group: "코드",
   },
@@ -73,6 +73,7 @@ export const FIXED_COLUMNS = [
   "total_score",
   "code_score",
   "output_score",
+  "irrelevant_output_deduction",
   "temperature",
   "max_tokens",
   "chunk_size",
@@ -80,8 +81,8 @@ export const FIXED_COLUMNS = [
   "embedding_model",
   "embedding_function",
   "retriever_k",
-  "qwen_invoke_1st",
-  "qwen_invoke_fallback",
+  "spec_search_tool",
+  "dev_invoke",
   "general_executor",
   "supervisor_tools",
   "out_vision_analyst",
@@ -109,6 +110,20 @@ export const BUCKET_ORDER = [
 
 const TRUE_SET = new Set(["1", "true", "yes", "y", "pass", "ok", "o", "t"]);
 const FALSE_SET = new Set(["0", "false", "no", "n", "fail", "x", "", "f", "none", "nan"]);
+export const IRRELEVANT_KEYWORDS = [
+  "SR",
+  "화질 향상",
+  "화질향상",
+  "초해상도",
+  "번역",
+  "translation",
+  "실시간 채팅",
+  "실시간채팅",
+  "live chat",
+  "STT",
+  "speech to text",
+  "speech-to-text",
+];
 
 function isFiniteNumber(value) {
   return typeof value === "number" && Number.isFinite(value);
@@ -175,6 +190,41 @@ function extractSupervisorToolsBlock(code) {
     return slice;
   }
   return slice.slice(0, marker);
+}
+
+function extractPlanningExecutorBlock(code) {
+  const match = code.match(
+    /planning_executor\s*=\s*create_agent\s*\(.*?(?=\ndev_executor|\Z)/s,
+  );
+  return match?.[0] ?? "";
+}
+
+function checkIrrelevantOutput(notebook) {
+  for (const cell of notebook.cells) {
+    if (cell?.cell_type !== "code") {
+      continue;
+    }
+
+    for (const output of Array.isArray(cell?.outputs) ? cell.outputs : []) {
+      let text = "";
+      if (output?.output_type === "stream") {
+        text = normalizeTextValue(output?.text);
+      } else if (output?.output_type === "execute_result") {
+        text = normalizeTextValue(output?.data?.["text/plain"]);
+      } else if (output?.output_type === "display_data") {
+        text = normalizeTextValue(output?.data?.["text/plain"]);
+      }
+
+      const lowered = text.toLowerCase();
+      for (const keyword of IRRELEVANT_KEYWORDS) {
+        if (lowered.includes(keyword.toLowerCase())) {
+          return { matched: true, keyword };
+        }
+      }
+    }
+  }
+
+  return { matched: false, keyword: null };
 }
 
 function outputToText(output) {
@@ -280,6 +330,7 @@ export function createBlankResult(studentName, fileName, errorMessage = "") {
     total_score: 0,
     code_score: 0,
     output_score: 0,
+    irrelevant_output_deduction: "없음",
     step13_tools_called: "(없음)",
     step15_tools_called: "(없음)",
     selected_notebook: "",
@@ -344,34 +395,24 @@ export function gradeNotebook(notebook) {
     throw new Error("노트북 형식이 올바르지 않습니다.");
   }
 
-  const firstMarkdownCells = notebook.cells
-    .filter((cell) => cell?.cell_type === "markdown")
-    .slice(0, 5);
-
-  for (const cell of firstMarkdownCells) {
-    const source = normalizeTextValue(cell?.source);
-    if (source.includes("가전제품") || source.includes("스마트홈 연동")) {
-      throw new Error("다른 과제 제출 (가전제품/스마트홈 버전) — 채점 제외");
-    }
-  }
-
   const code = notebook.cells
     .filter((cell) => cell?.cell_type === "code")
     .map((cell) => normalizeTextValue(cell?.source))
     .join("\n");
 
-  const checkTemperature = /temperature\s*=\s*0\.1/.test(code);
-  const checkMaxTokens = /max_tokens\s*=\s*800/.test(code);
-  const checkChunkSize = /chunk_size\s*=\s*1000/.test(code);
-  const checkChunkOverlap = /chunk_overlap\s*=\s*150/.test(code);
+  const checkTemperature = /temperature\s*=\s*0\b(?!\.)/.test(code);
+  const checkMaxTokens = /max_tokens\s*=\s*900\b(?!\.)/.test(code);
+  const checkChunkSize = /chunk_size\s*=\s*1200\b(?!\.)/.test(code);
+  const checkChunkOverlap = /chunk_overlap\s*=\s*200\b(?!\.)/.test(code);
   const checkEmbeddingModel = code.includes("text-embedding-3-small");
   const checkEmbeddingFunction = /embedding_function\s*=\s*emb/.test(code);
-  const checkRetrieverK = /["']k["']\s*:\s*4/.test(code);
+  const checkRetrieverK = /["']k["']\s*:\s*3\b(?!\.)/.test(code);
 
-  const visionFnCode = extractFunctionSlice(code, "ask_vision_analyst", ["\n@tool", "\nplanning_executor"]);
-  const qwenInvokes = visionFnCode.match(/qwen3vl_answer\.invoke\s*\(/g) ?? [];
-  const checkQwenInvokeFirst = qwenInvokes.length >= 1;
-  const checkQwenInvokeFallback = qwenInvokes.length >= 2;
+  const planningExecutorBlock = extractPlanningExecutorBlock(code);
+  const checkSpecSearchTool = /tools\s*=\s*\[.*spec_search.*\]/s.test(planningExecutorBlock);
+
+  const developerFnCode = extractFunctionSlice(code, "ask_developer", ["\n@tool", "\ndef check_progress"]);
+  const checkDevInvoke = /dev_executor\.invoke\s*\(/.test(developerFnCode);
 
   const generalFnCode = extractFunctionSlice(code, "general_chat", ["\n@tool", "\nsupervisor_tools"]);
   const checkGeneralExecutor = /general_executor\.invoke\s*\(/.test(generalFnCode);
@@ -394,8 +435,8 @@ export function gradeNotebook(notebook) {
     embedding_model: [checkEmbeddingModel, 5],
     embedding_function: [checkEmbeddingFunction, 5],
     retriever_k: [checkRetrieverK, 5],
-    qwen_invoke_1st: [checkQwenInvokeFirst, 5],
-    qwen_invoke_fallback: [checkQwenInvokeFallback, 5],
+    spec_search_tool: [checkSpecSearchTool, 5],
+    dev_invoke: [checkDevInvoke, 5],
     general_executor: [checkGeneralExecutor, 5],
     supervisor_tools: [checkSupervisorTools, 5],
   };
@@ -430,11 +471,19 @@ export function gradeNotebook(notebook) {
     0,
   );
 
-  const totalScore = codeScore + outputScore;
+  let totalScore = codeScore + outputScore;
+  const irrelevantOutputCheck = checkIrrelevantOutput(notebook);
+  if (irrelevantOutputCheck.matched) {
+    totalScore = Math.max(0, totalScore - 30);
+  }
+
   const result = {
     total_score: totalScore,
     code_score: codeScore,
     output_score: outputScore,
+    irrelevant_output_deduction: irrelevantOutputCheck.matched
+      ? `-30 ('${irrelevantOutputCheck.keyword}')`
+      : "없음",
     step13_tools_called: calledTools.length ? calledTools.join(", ") : "(없음)",
     step15_tools_called: step15Tools.length ? step15Tools.join(", ") : "(없음)",
   };
@@ -477,6 +526,10 @@ export function buildDeductionRows(results) {
         failedItems.push(`${spec.label} (-${formatNumber(spec.points)}점)`);
         deductedPoints += spec.points;
       }
+    }
+
+    if (row?.irrelevant_output_deduction && row.irrelevant_output_deduction !== "없음") {
+      failedItems.push(`주제 외 출력 감점 (${row.irrelevant_output_deduction})`);
     }
 
     return {

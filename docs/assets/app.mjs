@@ -382,6 +382,9 @@ function renderResultsTable() {
             if (row.warning) {
               noteParts.push(`경고: ${row.warning}`);
             }
+            if (row.irrelevant_output_deduction && row.irrelevant_output_deduction !== "없음") {
+              noteParts.push(`주제 외 출력 감점: ${row.irrelevant_output_deduction}`);
+            }
             if (row.오류) {
               noteParts.push(`오류: ${row.오류}`);
             }
