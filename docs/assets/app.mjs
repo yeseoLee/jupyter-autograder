@@ -419,7 +419,15 @@ function renderResultsTable() {
                     ${escapeHtml(row.step15_tools_called || "(없음)")}
                   </div>
                 </td>
-                <td>${escapeHtml(noteParts.join("\n")) || "-"}</td>
+                <td>
+                  ${
+                    noteParts.length
+                      ? `<ul class="note-list">${noteParts
+                          .map((note) => `<li>${escapeHtml(note)}</li>`)
+                          .join("")}</ul>`
+                      : "-"
+                  }
+                </td>
               </tr>
             `;
           })

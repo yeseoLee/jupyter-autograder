@@ -558,6 +558,16 @@ button:disabled {
   margin-top: 10px;
 }
 
+.note-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.note-list li + li {
+  margin-top: 6px;
+}
+
 .empty-table,
 .placeholder-card {
   display: grid;
